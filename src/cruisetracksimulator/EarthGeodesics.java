@@ -18,8 +18,9 @@ import static java.lang.Math.sqrt;
  * @author pena
  */
 public class EarthGeodesics {
-    double R = 6371;    
-    
+
+    double R = 6371;
+
     public double getGreatCircleDistance(Position p0, Position p1) {
         double latStart = p0.getLatitudeInRadians();
         double lonStart = p0.getLongitudeInRadians();
@@ -38,7 +39,11 @@ public class EarthGeodesics {
         double latEnd = p1.getLatitudeInRadians();
         double lonEnd = p1.getLongitudeInRadians();
         double dLon = lonEnd - lonStart;
-        return (180 / PI) * atan2(sin(dLon) * cos(latEnd), cos(latStart) * sin(latEnd) - sin(latStart) * cos(latEnd) * cos(dLon));
+        double bearing = (180 / PI) * atan2(sin(dLon) * cos(latEnd), cos(latStart) * sin(latEnd) - sin(latStart) * cos(latEnd) * cos(dLon));
+        if (bearing < 0) {
+            bearing += 360;
+        }//end if
+        return bearing;
     }//end getBearing
 
     public Position getNextPosition(Position p, double distance, double bearing) {
@@ -51,5 +56,5 @@ public class EarthGeodesics {
         return p0;
 
     }//end getNextPosition    
-    
+
 }
