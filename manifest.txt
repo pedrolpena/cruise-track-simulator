@@ -1,0 +1,2 @@
+Class-Path: lib/RXTXcomm.jar
+Main-Class: cruisetracksimulator.CruiseTrackSimulator
