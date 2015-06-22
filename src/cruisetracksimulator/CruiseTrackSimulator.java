@@ -25,7 +25,7 @@ public class CruiseTrackSimulator {
         double lonStart = -80.19;
         double lonEnd = -5.75;
         double speed = 20;
-        double knots=0;
+        double knots = 20;
         double period = 1;
         double distanceInPeriod = 0;
         double totalDistance = 0;
@@ -45,7 +45,7 @@ public class CruiseTrackSimulator {
             knots = new Double(args[5]);
             speed = 1.852 * knots;
         }//end if
-        else{
+        else {
             System.out.println("usage: cruiseTrackSimulator"
                     + " serialPort "
                     + " startingLatitude"
@@ -53,7 +53,7 @@ public class CruiseTrackSimulator {
                     + " endingLatitude "
                     + " endingLongitude "
                     + " speedInKnots");
-            System.exit(0);
+            //System.exit(0);
         }
         Enumeration portIdentifiers = CommPortIdentifier.getPortIdentifiers();
         CommPortIdentifier portId = null;
@@ -67,8 +67,8 @@ public class CruiseTrackSimulator {
 
                 portId = pid;
 
-            }// enf id
-//System.out.println("pidName:"+pid.getName());
+            }// end if
+
         }// end while
 
         try {
@@ -77,7 +77,8 @@ public class CruiseTrackSimulator {
             os = new PrintStream(port.getOutputStream(), true);
 
         } catch (Exception e) {
-            //e.printStackTrace();
+            e.printStackTrace();
+            System.exit(0);
 
         }
 
@@ -90,37 +91,59 @@ public class CruiseTrackSimulator {
         bearing = cs.getBearing(startPosition, endPosition);
         currentBearing = bearing;
         totalDistance = cs.getGreatCircleDistance(startPosition, endPosition);
-        
-        System.out.println("       Starting: "+ startPosition);
-        System.out.println("         Ending: "+ endPosition);
-        System.out.println("Initial Bearing: "+ currentBearing + " Degrees");
-        System.out.println("          Speed: "+ knots + " Knots");
-        System.out.println(" Total Distance: "+ totalDistance + "Km");
-        System.out.println("    Serial Port: "+ wantedPort);
-        
+
+        System.out.println("       Starting: " + startPosition);
+        System.out.println("         Ending: " + endPosition);
+        System.out.println("Initial Bearing: " + currentBearing + " Degrees");
+        System.out.println("          Speed: " + knots + " Knots");
+        System.out.println(" Total Distance: " + totalDistance + "Km");
+        System.out.println("    Serial Port: " + wantedPort);
 
         previousTime = System.currentTimeMillis();
 
-        while (true) {
-            try {
+        try {
+            InputStreamReader fis = new InputStreamReader(System.in);
+            BufferedReader br = new BufferedReader(fis);
+            os.print(nsg.generateGPRMC(currentPosition, currentBearing, knots) + "\n\r");
+            os.flush();
+            while (true) {
 
-                //System.out.println(nsg.generateGPRMC(currentPosition, currentBearing, knots));
-                os.print(nsg.generateGPRMC(currentPosition, currentBearing, knots) + "\n\r");
-                os.flush();
-                Thread.sleep((long) period * 1000);
+                Thread.sleep(100);
                 currentTime = System.currentTimeMillis();
-                distanceInPeriod = (currentTime - previousTime) * speed / 3600000;
-                currentPosition.setPosition(cs.getNextPosition(currentPosition, distanceInPeriod, currentBearing));
-                currentBearing = cs.getBearing(currentPosition, endPosition);
+                if (currentTime - previousTime >= (long) period * 1000 - 100) {
+                    distanceInPeriod = (currentTime - previousTime) * speed / 3600000;
+                    currentPosition.setPosition(cs.getNextPosition(currentPosition, distanceInPeriod, currentBearing));
+                    currentBearing = cs.getBearing(currentPosition, endPosition);
 
-                previousTime = currentTime;
-            }//end try
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+                    os.print(nsg.generateGPRMC(currentPosition, currentBearing, knots) + "\n\r");
+                    os.flush();
 
-        }//end while
+                    previousTime = currentTime;
+                }//end if
 
+                if (br.ready()) {
+
+                    if (br.read() == '+') {
+                        knots++;
+                        speed = 1.852 * knots;
+                        System.out.println(nsg.generateGPRMC(currentPosition, currentBearing, knots));
+
+                    }//end if
+                    if (br.read() == '-') {
+                        if (knots > 0) {
+                            knots--;
+                        }
+                        speed = 1.852 * knots;
+                        System.out.println(nsg.generateGPRMC(currentPosition, currentBearing, knots));
+
+                    }//end if 
+                }//end if
+
+            }//end while
+        }//end try
+        catch (Exception e) {
+            e.printStackTrace();
+        }//end catch
     }// end main
 
 }// end class
